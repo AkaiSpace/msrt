@@ -1,0 +1,241 @@
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+
+
+# Tworzymy instancję aplikacji Flask
+app = Flask(__name__)
+CORS(app)  # Umożliwia dostęp z różnych domen
+
+
+# Konfiguracja bazy danych (SQLite w tym przypadku)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'  # Ścieżka do bazy danych
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Wyłączenie powiadomień o zmianach w bazie
+
+# Inicjalizacja SQLAlchemy
+db = SQLAlchemy(app)
+
+# Definiujemy model bazy danych (przykładowo samochody, części i rodzaje części)
+
+class Car(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chassis_number = db.Column(db.String(3), unique=True, nullable=False)
+    parts = db.relationship('Part', backref='car', lazy=True)  # Relacja z częściami
+
+    def __repr__(self):
+        return f"<Car {self.chassis_number}>"
+
+class Part(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Nazwa części
+    mileage = db.Column(db.Integer, nullable=False)  # Przebieg części
+    part_number = db.Column(db.String(100), unique=True, nullable=False)  # Numer części
+    notes = db.Column(db.Text, nullable=True)  # Uwagi dotyczące części
+    car_id = db.Column(db.Integer, db.ForeignKey('car.id'), nullable=False)  # Klucz obcy do samochodu
+    part_type_id = db.Column(db.Integer, db.ForeignKey('part_type.id'), nullable=False)  # Klucz obcy do typu części
+
+    car = db.relationship('Car', backref='parts', lazy=True)  # Relacja z samochodem
+    part_type = db.relationship('PartType', backref='parts', lazy=True)  # Relacja z typem części
+
+    def __repr__(self):
+        return f"<Part {self.name} (Number: {self.part_number}) for {self.car.chassis_number}>"
+
+
+class PartType(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Nazwa typu części
+    max_mileage = db.Column(db.Integer, nullable=True)  # Maksymalny przebieg dla danego typu części
+
+    def __repr__(self):
+        return f"<PartType {self.name}>"
+
+
+# Funkcja do inicjalizacji bazy danych
+def init_db():
+    with app.app_context():  # Używamy kontekstu aplikacji
+        db.create_all()  # Tworzymy tabele w bazie danych (jeśli jeszcze nie istnieją)
+
+if __name__ == '__main__':
+    init_db()  # Inicjalizujemy bazę danych przy starcie aplikacji
+    app.run(debug=True)  # Uruchamiamy aplikację w trybie debugowania
+
+
+# Strona główna
+@app.route('/')
+def home():
+    return "Welcome to the Car Parts Management API!"
+
+if __name__ == '__main__':
+    init_db()  # Inicjalizacja bazy danych przed uruchomieniem aplikacji
+    app.run(debug=True)
+
+# CRUD dla samochodów
+# 1. Add a new car
+@app.route('/add-car', methods=['POST'])
+def add_car():
+    data = request.get_json()  # Get data from request
+
+    if not data or 'chassis_number' not in data:
+        return jsonify({'error': 'Missing required data'}), 400
+
+    # Create new car
+    new_car = Car(chassis_number=data['chassis_number'])
+    db.session.add(new_car)
+    db.session.commit()
+
+    return jsonify({'message': 'Car added successfully!', 'car': {'chassis_number': new_car.chassis_number}}), 201
+
+# 2. Update car (edit chassis_number)
+@app.route('/update-car/<int:id>', methods=['PUT'])
+def update_car(id):
+    car = Car.query.get_or_404(id)  # Get car by ID
+    data = request.get_json()
+
+    if 'chassis_number' in data:
+        car.chassis_number = data['chassis_number']  # Update chassis_number
+        db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Chassis number updated successfully!', 'car': {'chassis_number': car.chassis_number}})
+
+# 3. Delete car
+@app.route('/delete-car/<int:id>', methods=['DELETE'])
+def delete_car(id):
+    car = Car.query.get_or_404(id)  # Get car by ID
+    db.session.delete(car)  # Delete car from session
+    db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Car deleted successfully!'})
+
+# 4. Get a specific car by ID
+@app.route('/get-car/<int:id>', methods=['GET'])
+def get_car(id):
+    car = Car.query.get_or_404(id)  # Get car by ID
+    return jsonify({'car': {'chassis_number': car.chassis_number}})
+
+# 5. Get all cars
+@app.route('/get-cars', methods=['GET'])
+def get_cars():
+    cars = Car.query.all()  # Get all cars
+    cars_list = [{'id': car.id, 'chassis_number': car.chassis_number} for car in cars]
+    return jsonify({'cars': cars_list})
+
+# CRUD dla części
+# 1. Add a new part
+@app.route('/add-part', methods=['POST'])
+def add_part():
+    data = request.get_json()  # Get data from request
+
+    if not data or 'name' not in data or 'mileage' not in data or 'part_number' not in data or 'car_id' not in data or 'part_type_id' not in data:
+        return jsonify({'error': 'Missing required data'}), 400
+    
+    # Create new part
+    new_part = Part(name=data['name'], mileage=data['mileage'], part_number=data['part_number'], car_id=data['car_id'], part_type_id=data['part_type_id'])
+    db.session.add(new_part)
+    db.session.commit()
+
+    return jsonify({'message': 'Part added successfully!', 'part': {'name': new_part.name, 'part_number': new_part.part_number}}), 201
+
+# 2. Update part (edit name, mileage, part_number, notes)
+@app.route('/update-part/<int:id>', methods=['PUT'])
+def update_part(id):
+    part = Part.query.get_or_404(id)  # Get part by ID
+    data = request.get_json()
+
+    if 'name' in data:
+        part.name = data['name']  # Update name
+    if 'mileage' in data:
+        part.mileage = data['mileage']  # Update mileage
+    if 'part_number' in data:
+        part.part_number = data['part_number']  # Update part_number
+    if 'notes' in data:
+        part.notes = data['notes']  # Update notes
+
+    db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Part updated successfully!', 'part': {'name': part.name, 'part_number': part.part_number}})
+
+# 3. Delete part
+@app.route('/delete-part/<int:id>', methods=['DELETE'])
+def delete_part(id):
+    part = Part.query.get_or_404(id)  # Get part by ID
+    db.session.delete(part)  # Delete part from session
+    db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Part deleted successfully!'})
+
+# 4. Get a specific part by ID
+@app.route('/get-part/<int:id>', methods=['GET'])
+def get_part(id):
+    part = Part.query.get_or_404(id)  # Get part by ID
+    return jsonify({'part': {'name': part.name, 'part_number': part.part_number}})
+
+# 5. Get all parts
+@app.route('/get-parts', methods=['GET'])
+def get_parts():
+    parts = Part.query.all()  # Get all parts
+    parts_list = [{'id': part.id, 'name': part.name, 'part_number': part.part_number} for part in parts]
+    return jsonify({'parts': parts_list})
+
+# CRUD dla typów części
+# 1. Add a new part type
+@app.route('/add-part-type', methods=['POST'])
+
+def add_part_type():
+    data = request.get_json()  # Get data from request
+
+    if not data or 'name' not in data:
+        return jsonify({'error': 'Missing required data'}), 400
+    
+    # Create new part type
+    new_part_type = PartType(name=data['name'], max_mileage=data.get('max_mileage'))
+    db.session.add(new_part_type)
+    db.session.commit()
+
+    return jsonify({'message': 'Part type added successfully!', 'part_type': {'name': new_part_type.name}}), 201
+
+# 2. Update part type (edit name, max_mileage)
+@app.route('/update-part-type/<int:id>', methods=['PUT'])
+def update_part_type(id):
+    part_type = PartType.query.get_or_404(id)  # Get part type by ID
+    data = request.get_json()
+
+    if 'name' in data:
+        part_type.name = data['name']  # Update name
+    if 'max_mileage' in data:
+        part_type.max_mileage = data['max_mileage']  # Update max_mileage
+
+    db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Part type updated successfully!', 'part_type': {'name': part_type.name}})
+# 3. Delete part type
+@app.route('/delete-part-type/<int:id>', methods=['DELETE'])
+def delete_part_type(id):
+    part_type = PartType.query.get_or_404(id)  # Get part type by ID
+    db.session.delete(part_type)  # Delete part type from session
+    db.session.commit()  # Commit changes
+
+    return jsonify({'message': 'Part type deleted successfully!'})# 4. Get a specific part type by ID
+@app.route('/get-part-type/<int:id>', methods=['GET'])
+def get_part_type(id):
+    part_type = PartType.query.get_or_404(id)  # Get part type by ID
+    return jsonify({'part_type': {'name': part_type.name}})
+# 5. Get all part types
+@app.route('/get-part-types', methods=['GET'])
+def get_part_types():
+    part_types = PartType.query.all()  # Get all part types
+    part_types_list = [{'id': part_type.id, 'name': part_type.name} for part_type in part_types]
+    return jsonify({'part_types': part_types_list})
+
+@app.route('/test', methods=['GET'])
+def test():
+    return jsonify({"message": "This is a test endpoint"}), 200
+
+
+if __name__ == '__main__':
+    init_db()  # Inicjalizacja bazy danych przed uruchomieniem aplikacji
+    app.run(debug=True)  # Uruchomienie aplikacji w trybie debugowania
+
+# Zadanie 2
+# 1. Dodaj nowy samochód
+# POST /add-car
+# { "chassis_number": "XYZ" }
