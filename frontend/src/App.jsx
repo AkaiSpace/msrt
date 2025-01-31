@@ -10,6 +10,7 @@ import EditPartType from "./EditPartType"; // Importujemy nowy komponent do edyc
 import EditCar from "./EditCar"; // Import komponentu EditCar
 import Parts from "./Parts"; // Import nowej strony
 import CarDetails from "./CarDetails";
+import EditPart from "./EditPart"; // Importujemy nowy komponent do edycji części
 
 
 
@@ -28,6 +29,7 @@ function App() {
         <Route path="/edit-car/:carId" element={<EditCar />} />
         <Route path="/parts" element={<Parts />} /> {/* Nowa trasa */}
         <Route path="/car/:id" element={<CarDetails />} />
+        <Route path="/edit-part/:partId" element={<EditPart />} /> {/* Dodajemy trasę do edycji części */}
 
 
 

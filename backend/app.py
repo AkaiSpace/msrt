@@ -146,6 +146,23 @@ def get_parts():
 
     return jsonify({'parts': part_list})
 
+# Endpoint do pobierania danych pojedynczej części
+@app.route("/get-part/<int:part_id>", methods=["GET"])
+def get_part(part_id):
+    part = Part.query.get(part_id)
+    if not part:
+        return jsonify({"error": "Część nie została znaleziona"}), 404
+
+    return jsonify({
+        "part": {
+            "id": part.id,
+            "name": part.name,
+            "part_number": part.part_number,
+            "mileage": part.mileage,
+            "notes": part.notes,
+            "car_chassis_number": part.car.chassis_number if part.car else None
+        }
+    }), 200
 
 
 # Endpoint do usuwania części
@@ -243,13 +260,33 @@ def delete_part_type(part_type_id):
 
 @app.route('/get-parts-for-car/<int:car_id>', methods=['GET'])
 def get_parts_for_car(car_id):
-    # Pobranie części przypisanych do samochodu na podstawie car_id
-    parts = Part.query.filter_by(car_id=car_id).all()
-    part_list = [
-        {'id': part.id, 'name': part.name, 'part_number': part.part_number, 'mileage': part.mileage, 'notes': part.notes}
-        for part in parts
-    ]
+    parts = Part.query.filter_by(car_id=car_id).all()  # Pobranie części przypisanych do auta
+
+    part_list = []
+    for part in parts:
+        part_type = PartType.query.get(part.part_type_id)  # Pobranie typu części na podstawie part_type_id
+        max_mileage = part_type.max_mileage if part_type else None
+
+        # Obliczenie zużycia w procentach
+        usage_percentage = None
+        if max_mileage and max_mileage > 0:
+            usage_percentage = round((part.mileage / max_mileage) * 100, 2)
+
+        part_list.append({
+            'id': part.id,
+            'name': part.name,
+            'part_number': part.part_number,
+            'mileage': part.mileage,
+            'notes': part.notes,
+            'part_type_name': part_type.name if part_type else None,
+            'max_mileage': max_mileage,
+            'usage_percentage': usage_percentage
+        })
+
     return jsonify({'parts': part_list})
+
+
+
 
 
 # Inicjalizacja bazy danych i uruchomienie aplikacji

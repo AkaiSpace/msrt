@@ -7,16 +7,35 @@ function Parts() {
   const [searchTerm, setSearchTerm] = useState(""); // Nowy stan dla wyszukiwania
 
   useEffect(() => {
+    fetchParts();
+  }, []);
+
+  // Pobiera części z serwera
+  const fetchParts = () => {
     axios
       .get("http://localhost:5000/get-parts")
       .then((response) => setParts(response.data.parts))
       .catch((error) => console.error("Błąd przy pobieraniu części:", error));
-  }, []);
+  };
+
+  // Usuwanie części po potwierdzeniu
+  const handleDeletePart = (id) => {
+    if (window.confirm("Czy na pewno chcesz usunąć tę część?")) {
+      axios
+        .delete(`http://localhost:5000/delete-part/${id}`)
+        .then(() => {
+          alert("Część została usunięta.");
+          fetchParts(); // Odświeżenie listy części po usunięciu
+        })
+        .catch((error) => console.error("Błąd przy usuwaniu części:", error));
+    }
+  };
 
   // Filtrujemy części na podstawie wpisanego tekstu
-  const filteredParts = parts.filter((part) =>
-    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    part.car_chassis_number.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredParts = parts.filter(
+    (part) =>
+      part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      part.car_chassis_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -41,6 +60,7 @@ function Parts() {
             <th>Numer Seryjny</th>
             <th>Przebieg (km)</th>
             <th>Notatki</th>
+            <th>Akcje</th> {/* Nowa kolumna dla przycisków */}
           </tr>
         </thead>
         <tbody>
@@ -52,6 +72,19 @@ function Parts() {
               <td>{part.part_number}</td>
               <td>{part.mileage}</td>
               <td>{part.notes}</td>
+              <td>
+                {/* Przycisk Edytuj */}
+                <Link to={`/edit-part/${part.id}`} className="btn btn-primary btn-sm me-2">
+                  Edytuj
+                </Link>
+                {/* Przycisk Usuń */}
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleDeletePart(part.id)}
+                >
+                  Usuń
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
