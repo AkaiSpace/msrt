@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 function Parts() {
   const [parts, setParts] = useState([]);
   const [searchTerm, setSearchTerm] = useState(""); // Nowy stan dla wyszukiwania
+  const [sortOrder, setSortOrder] = useState("asc"); // Stan dla sortowania
 
   useEffect(() => {
     fetchParts();
@@ -35,8 +36,30 @@ function Parts() {
   const filteredParts = parts.filter(
     (part) =>
       part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.car_chassis_number.toLowerCase().includes(searchTerm.toLowerCase())
+      part.car_chassis_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      part.part_number.toLowerCase().includes(searchTerm.toLowerCase()) // Wyszukiwanie po numerze seryjnym
   );
+
+  // Funkcja do sortowania części
+  const sortParts = (column) => {
+    const sortedParts = [...filteredParts].sort((a, b) => {
+      if (column === "id" || column === "car_chassis_number" || column === "usage_percentage") {
+        if (typeof a[column] === 'string') {
+          return sortOrder === "asc"
+            ? a[column].localeCompare(b[column])
+            : b[column].localeCompare(a[column]);
+        } else {
+          return sortOrder === "asc"
+            ? a[column] - b[column]
+            : b[column] - a[column];
+        }
+      }
+      return 0;
+    });
+
+    setParts(sortedParts);
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc"); // Zmiana kolejności sortowania
+  };
 
   return (
     <div className="container mt-4">
@@ -46,7 +69,7 @@ function Parts() {
       <input
         type="text"
         className="form-control my-3"
-        placeholder="Szukaj po nazwie lub numerze nadwozia..."
+        placeholder="Szukaj po nazwie, numerze nadwozia lub numerze części..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -54,13 +77,23 @@ function Parts() {
       <table className="table table-striped">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Samochód</th>
+            <th>
+              ID{" "}
+              <button onClick={() => sortParts("id")}>🔽/🔼</button> {/* Przycisk do sortowania */}
+            </th>
+            <th>
+              Samochód{" "}
+              <button onClick={() => sortParts("car_chassis_number")}>🔽/🔼</button> {/* Przycisk do sortowania */}
+            </th>
             <th>Nazwa</th>
             <th>Numer Seryjny</th>
             <th>Przebieg (km)</th>
+            <th>
+              Procent zużycia{" "}
+              <button onClick={() => sortParts("usage_percentage")}>🔽/🔼</button> {/* Przycisk do sortowania */}
+            </th>
             <th>Notatki</th>
-            <th>Akcje</th> {/* Nowa kolumna dla przycisków */}
+            <th>Akcje</th>
           </tr>
         </thead>
         <tbody>
@@ -71,13 +104,12 @@ function Parts() {
               <td>{part.name}</td>
               <td>{part.part_number}</td>
               <td>{part.mileage}</td>
+              <td>{part.usage_percentage !== null ? `${part.usage_percentage}%` : "-"}</td>
               <td>{part.notes}</td>
               <td>
-                {/* Przycisk Edytuj */}
                 <Link to={`/edit-part/${part.id}`} className="btn btn-primary btn-sm me-2">
                   Edytuj
                 </Link>
-                {/* Przycisk Usuń */}
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => handleDeletePart(part.id)}
@@ -90,7 +122,6 @@ function Parts() {
         </tbody>
       </table>
 
-      {/* Przyciski na dole strony */}
       <div className="mt-4 d-flex justify-content-between">
         <Link to="/" className="btn btn-secondary">Powrót do strony głównej</Link>
         <Link to="/add-part" className="btn btn-success">Dodaj część</Link>

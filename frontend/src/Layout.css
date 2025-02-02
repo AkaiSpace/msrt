@@ -1,0 +1,28 @@
+/* Tło przycisków menu */
+.list-group-item {
+    background-color: #343a40; /* Ciemne tło przycisku */
+    color: #6b6b6b; /* Jasny tekst */
+    border: none; /* Usuwamy obramowanie */
+  }
+  
+  /* Zmiana koloru przycisku na hover */
+  .list-group-item:hover {
+    background-color: #8f98a0; /* Ciemniejszy odcień tła po najechaniu */
+    color: #fff; /* Biały tekst po najechaniu */
+  }
+  
+  /* Zmiana koloru przycisku, gdy jest aktywny */
+  .list-group-item.active {
+    background-color: #007bff; /* Niebieskie tło dla aktywnego elementu */
+    color: white; /* Biały tekst dla aktywnego elementu */
+    font-weight: bold; /* Wyróżnienie aktywnego elementu pogrubieniem */
+  }
+
+  /* Zmiana koloru fluid container */
+.container-fluid {
+    background-color: #ffffff; /* Jasne tło */
+    padding: 2rem; /* Wewnętrzny odstęp */
+  }
+
+  
+  

@@ -93,6 +93,11 @@ function AddPart() {
 
         <button type="submit" className="btn btn-success">Dodaj część</button>
       </form>
+      <div className="mt-4">
+        <button className="btn btn-secondary" onClick={() => navigate("/parts")}>
+          Powrót do listy części
+        </button>
+      </div>
     </div>
   );
 }

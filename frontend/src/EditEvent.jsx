@@ -2,42 +2,46 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-function EditPartType() {
+function EditEvent() {
   const { id } = useParams(); // Pobieramy id z URL
   const navigate = useNavigate();
-  const [partType, setPartType] = useState({ name: "", max_mileage: "" });
+  const [event, setEvent] = useState({ event_name: "", event_date: "" });
   const [loading, setLoading] = useState(true); // Stan ładowania
   const [error, setError] = useState(""); // Stan błędu
   const [success, setSuccess] = useState(false); // Stan sukcesu
 
   useEffect(() => {
+    // Pobieranie danych wydarzenia z serwera
     axios
-      .get(`http://localhost:5000/get-part-type/${id}`)
+      .get(`http://localhost:5000/get-event/${id}`)
       .then((response) => {
-        setPartType(response.data);
+        setEvent({
+          event_name: response.data.name,
+          event_date: response.data.date,
+        });
       })
       .catch((error) => {
-        console.error("Błąd przy pobieraniu danych typu części:", error);
-        setError("Nie udało się pobrać danych typu części.");
+        console.error("Błąd przy pobieraniu danych wydarzenia:", error);
+        setError("Nie udało się pobrać danych wydarzenia.");
       })
       .finally(() => setLoading(false)); // Po zakończeniu ładowania
   }, [id]);
 
   const handleChange = (e) => {
-    setPartType({ ...partType, [e.target.name]: e.target.value });
+    setEvent({ ...event, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .put(`http://localhost:5000/update-part-type/${id}`, partType)
+      .put(`http://localhost:5000/update-event/${id}`, event)
       .then(() => {
         setSuccess(true); // Ustawienie stanu sukcesu
-        setTimeout(() => navigate("/components"), 2000); // Przekierowanie po 2 sekundy
+        setTimeout(() => navigate("/events"), 2000); // Przekierowanie po 2 sekundy
       })
       .catch((error) => {
-        console.error("Błąd przy aktualizacji typu części:", error);
-        setError("Nie udało się zaktualizować typu części.");
+        console.error("Błąd przy aktualizacji wydarzenia:", error);
+        setError("Nie udało się zaktualizować wydarzenia.");
       });
   };
 
@@ -47,30 +51,30 @@ function EditPartType() {
 
   return (
     <div className="container mt-4">
-      <h1>Edytuj Typ Części</h1>
+      <h1>Edytuj Wydarzenie</h1>
 
       {error && <div className="alert alert-danger">{error}</div>} {/* Komunikat błędu */}
-      {success && <div className="alert alert-success">Typ części został zaktualizowany!</div>} {/* Komunikat sukcesu */}
+      {success && <div className="alert alert-success">Wydarzenie zostało zaktualizowane!</div>} {/* Komunikat sukcesu */}
 
       <form onSubmit={handleSubmit} className="mt-3">
         <div className="mb-3">
-          <label className="form-label">Nazwa części</label>
+          <label className="form-label">Nazwa wydarzenia</label>
           <input
             type="text"
             className="form-control"
-            name="name"
-            value={partType.name}
+            name="event_name"
+            value={event.event_name}
             onChange={handleChange}
             required
           />
         </div>
         <div className="mb-3">
-          <label className="form-label">Max Mileage (km)</label>
+          <label className="form-label">Data wydarzenia</label>
           <input
-            type="number"
+            type="date"
             className="form-control"
-            name="max_mileage"
-            value={partType.max_mileage}
+            name="event_date"
+            value={event.event_date}
             onChange={handleChange}
             required
           />
@@ -83,7 +87,7 @@ function EditPartType() {
       {/* Szary przycisk powrotu */}
       <button
         className="btn btn-secondary mt-3"
-        onClick={() => navigate("/components")} // Zwrócenie użytkownika na stronę komponentów
+        onClick={() => navigate("/events")} // Zwrócenie użytkownika na stronę wydarzeń
       >
         Powrót
       </button>
@@ -91,4 +95,4 @@ function EditPartType() {
   );
 }
 
-export default EditPartType;
+export default EditEvent;

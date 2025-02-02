@@ -9,17 +9,23 @@ function CarDetails() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Pobieranie szczegółów samochodu
     axios
-    .get(`http://localhost:5000/get-car/${id}`)
-    .then((response) => {
-      console.log("Odpowiedź API:", response.data); // Sprawdź, czy dane mają strukturę { car: ... }
-      setCar(response.data.car); // Ustawienie tylko "car" z odpowiedzi
-    })
-    .catch((error) => {
-      console.error("Błąd przy pobieraniu danych samochodu", error);
-      setError("Błąd przy pobieraniu danych samochodu.");
-    });
-
+      .get(`http://localhost:5000/get-car/${id}`)
+      .then((response) => {
+        console.log("Odpowiedź API:", response.data); // Sprawdzamy strukturę odpowiedzi
+        if (response.data) { // Sprawdzamy, czy odpowiedź zawiera dane
+          setCar(response.data); // Ustawienie danych samochodu
+        } else {
+          setError("Brak danych samochodu.");
+        }
+      })
+      .catch((error) => {
+        console.error("Błąd przy pobieraniu danych samochodu", error);
+        setError("Błąd przy pobieraniu danych samochodu.");
+      });
+  
+    // Pobieranie części przypisanych do samochodu
     axios
       .get(`http://localhost:5000/get-parts-for-car/${id}`)
       .then((response) => {
@@ -46,7 +52,7 @@ function CarDetails() {
         {car && car.chassis_number ? `(${car.chassis_number})` : ""}
       </h1>
       {error && <p className="text-danger">{error}</p>}
-
+  
       {car ? (
         <div>
           <h3>Lista części:</h3>
@@ -54,7 +60,7 @@ function CarDetails() {
             {parts.length > 0 ? (
               parts.map((part) => (
                 <li key={part.id} className="list-group-item">
-                  <h5>{part.part_type_name}</h5> {/* Wyświetlamy typ części */}
+                  <h5>{part.name}</h5> {/* Wyświetlamy typ części */}
                   <p>Numer części: {part.part_number}</p>
                   <p>Przebieg: {part.mileage} km</p>
                   <p>
@@ -63,7 +69,7 @@ function CarDetails() {
                       ? `${part.usage_percentage}%`
                       : "Brak danych"}
                   </p>
-
+  
                   {/* Pasek zużycia */}
                   <div className="progress" style={{ height: "20px" }}>
                     <div
@@ -79,7 +85,7 @@ function CarDetails() {
                         : "?"}
                     </div>
                   </div>
-
+  
                   <p>Notatki: {part.notes}</p>
                 </li>
               ))
