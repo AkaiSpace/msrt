@@ -6,7 +6,7 @@ import Edit from "./Edit";
 import AddCar from "./AddCar";
 import AddPart from "./AddPart";
 import AddPartType from "./AddPartType";
-import Components from "./components";
+import Components from "./Components";
 import EditPartType from "./EditPartType";
 import EditCar from "./EditCar";
 import Parts from "./Parts";
