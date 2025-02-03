@@ -14,7 +14,7 @@ function Parts() {
   // Pobiera części z serwera
   const fetchParts = () => {
     axios
-      .get("http://localhost:5000/get-parts")
+      .get('${import.meta.env.VITE_API_URL}/get-parts')
       .then((response) => setParts(response.data.parts))
       .catch((error) => console.error("Błąd przy pobieraniu części:", error));
   };
@@ -23,7 +23,7 @@ function Parts() {
   const handleDeletePart = (id) => {
     if (window.confirm("Czy na pewno chcesz usunąć tę część?")) {
       axios
-        .delete(`http://localhost:5000/delete-part/${id}`)
+        .delete(`${import.meta.env.VITE_API_URL}/delete-part/${id}`)
         .then(() => {
           alert("Część została usunięta.");
           fetchParts(); // Odświeżenie listy części po usunięciu

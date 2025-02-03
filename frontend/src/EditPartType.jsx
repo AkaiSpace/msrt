@@ -12,7 +12,7 @@ function EditPartType() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/get-part-type/${id}`)
+      .get(`${import.meta.env.VITE_API_URL}/get-part-type/${id}`)
       .then((response) => {
         setPartType(response.data);
       })
@@ -30,7 +30,7 @@ function EditPartType() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .put(`http://localhost:5000/update-part-type/${id}`, partType)
+      .put(`${import.meta.env.VITE_API_URL}/update-part-type/${id}`, partType)
       .then(() => {
         setSuccess(true); // Ustawienie stanu sukcesu
         setTimeout(() => navigate("/components"), 2000); // Przekierowanie po 2 sekundy

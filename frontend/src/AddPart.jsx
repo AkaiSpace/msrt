@@ -19,12 +19,12 @@ function AddPart() {
   // Pobranie rodzajów części i samochodów
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-part-types")
+      .get('${import.meta.env.VITE_API_URL}/get-part-types')
       .then((response) => setPartTypes(response.data.part_types))
       .catch((error) => console.error("Błąd przy pobieraniu rodzajów części:", error));
 
     axios
-      .get("http://localhost:5000/get-cars")
+      .get('${import.meta.env.VITE_API_URL}/get-cars')
       .then((response) => setCars(response.data.cars))
       .catch((error) => console.error("Błąd przy pobieraniu samochodów:", error));
   }, []);
@@ -38,7 +38,7 @@ function AddPart() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5000/add-part", newPart)
+      .post('${import.meta.env.VITE_API_URL}/add-part', newPart)
       .then(() => navigate("/")) // Przekierowanie po zapisaniu
       .catch((error) => console.error("Błąd przy dodawaniu części:", error));
   };

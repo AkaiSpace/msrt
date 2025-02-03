@@ -12,7 +12,7 @@ function AddCarToEvent() {
   // Pobiera szczegóły wydarzenia
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/get-event/${eventId}`)
+      .get(`${import.meta.env.VITE_API_URL}/get-event/${eventId}`)
       .then((response) => setEvent(response.data))
       .catch((error) => console.error("Błąd przy pobieraniu wydarzenia:", error));
   }, [eventId]);
@@ -20,7 +20,7 @@ function AddCarToEvent() {
   // Pobiera listę samochodów
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-cars")
+      .get('${import.meta.env.VITE_API_URL}/get-cars')
       .then((response) => setCars(response.data.cars))
       .catch((error) => console.error("Błąd przy pobieraniu samochodów:", error));
   }, []);
@@ -35,7 +35,7 @@ function AddCarToEvent() {
     }
 
     axios
-      .post("http://localhost:5000/add-car-to-event", {
+      .post('${import.meta.env.VITE_API_URL}/add-car-to-event', {
         event_id: eventId,
         car_id: selectedCarId,
       })

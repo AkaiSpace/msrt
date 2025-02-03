@@ -11,7 +11,7 @@ function Components() {
   // Pobieranie typów części z backendu
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-part-types")
+      .get('${import.meta.env.VITE_API_URL}/get-part-types')
       .then((response) => {
         setPartTypes(response.data.part_types);
       })
@@ -27,7 +27,7 @@ function Components() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5000/add-part-type", newPartType)
+      .post('${import.meta.env.VITE_API_URL}/add-part-type', newPartType)
       .then((response) => {
         setPartTypes([...partTypes, response.data.part_type]); // Dodanie nowego typu części do listy
         setNewPartType({ name: "", max_mileage: "" }); // Wyczyszczenie formularza
@@ -39,7 +39,7 @@ function Components() {
   // Obsługa usuwania typu części
   const handleDelete = (id) => {
     axios
-      .delete(`http://localhost:5000/delete-part-type/${id}`)
+      .delete(`${import.meta.env.VITE_API_URL}/delete-part-type/${id}`)
       .then(() => {
         setPartTypes(partTypes.filter((part) => part.id !== id)); // Usunięcie z listy
       })

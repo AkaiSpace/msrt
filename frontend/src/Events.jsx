@@ -10,7 +10,7 @@ function Events() {
   // Pobiera wydarzenia z serwera
   const fetchEvents = () => {
     axios
-      .get("http://localhost:5000/get-events")
+      .get('${import.meta.env.VITE_API_URL}/get-events')
       .then((response) => {
         setEvents(
           response.data.events.map((event) => ({

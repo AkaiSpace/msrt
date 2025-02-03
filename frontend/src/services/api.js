@@ -1,7 +1,7 @@
 // api.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000'; // Zakładając, że backend działa na tym porcie
+const API_URL = '/api'; // Zakładając, że backend działa na tym porcie
 
 export const getCars = async () => {
   try {

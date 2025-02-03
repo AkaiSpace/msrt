@@ -8,7 +8,7 @@ function Home() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-cars")
+      .get('${import.meta.env.VITE_API_URL}/get-cars')
       .then((response) => {
         setCars(response.data.cars);
       })

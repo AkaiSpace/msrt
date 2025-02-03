@@ -7,7 +7,7 @@ function AddCar() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5000/add-car", { chassis_number: chassisNumber })
+      .post('${import.meta.env.VITE_API_URL}/add-car', { chassis_number: chassisNumber })
       .then((response) => {
         alert(response.data.message);
       })
