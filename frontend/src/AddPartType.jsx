@@ -8,7 +8,7 @@ function AddPartType() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post('${import.meta.env.VITE_API_URL}/add-part-type', {
+      .post(`${import.meta.env.VITE_BACKEND_URL}/add-part-type`, {
         name: partTypeName,
         max_mileage: maxMileage,
       })

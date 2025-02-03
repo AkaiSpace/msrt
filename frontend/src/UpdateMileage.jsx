@@ -13,7 +13,7 @@ function UpdateMileage() {
   // Pobierz listę samochodów z backendu
   useEffect(() => {
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-cars')
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-cars`)
       .then((response) => {
         setCars(response.data.cars);
         setLoading(false);
@@ -44,7 +44,7 @@ function UpdateMileage() {
 
     // Wyślij żądanie do backendu
     axios
-      .put(`${import.meta.env.VITE_API_URL}/update-mileage/${selectedCarId}`, { mileage: mileageNumber })
+      .put(`${import.meta.env.VITE_BACKEND_URL}/update-mileage/${selectedCarId}`, { mileage: mileageNumber })
       .then(() => {
         alert("Przebiegi części zaktualizowane pomyślnie!");
         navigate("/"); // Przekierowanie na stronę główną

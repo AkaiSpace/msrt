@@ -19,7 +19,7 @@ function EditCar() {
     }
 
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-car/${carId}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-car/${carId}`)
       .then((response) => {
         console.log("Otrzymane dane z API:", response.data); // Debugowanie
         setCar(response.data);
@@ -51,7 +51,7 @@ function EditCar() {
 
     // Wysyłanie żądania PUT do API
     axios
-      .put(`${import.meta.env.VITE_API_URL}/update-car/${carId}`, {
+      .put(`${import.meta.env.VITE_BACKEND_URL}/update-car/${carId}`, {
         chassis_number: newChassisNumber,
         driver: newDriver, // Dodanie kierowcy
       })

@@ -15,7 +15,7 @@ function Edit() {
   // Pobranie listy samochodów
   useEffect(() => {
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-cars')
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-cars`)
       .then((response) => {
         setCars(response.data.cars);
       })
@@ -39,7 +39,7 @@ function Edit() {
     }
 
     axios
-      .post('${import.meta.env.VITE_API_URL}/add-car', {
+      .post(`${import.meta.env.VITE_BACKEND_URL}/add-car`, {
         chassis_number: chassisNumber,
         driver: driver, // Dodanie kierowcy
       })
@@ -58,7 +58,7 @@ function Edit() {
   // Funkcja do usuwania samochodu
   const handleDeleteCar = (id) => {
     axios
-      .delete(`${import.meta.env.VITE_API_URL}/delete-car/${id}`)
+      .delete(`${import.meta.env.VITE_BACKEND_URL}/delete-car/${id}`)
       .then(() => {
         setCars(cars.filter((car) => car.id !== id));
       })

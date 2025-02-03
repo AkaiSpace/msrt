@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function AddPart() {
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
   const [partTypes, setPartTypes] = useState([]);
   const [cars, setCars] = useState([]);
   const [newPart, setNewPart] = useState({
@@ -19,12 +20,12 @@ function AddPart() {
   // Pobranie rodzajów części i samochodów
   useEffect(() => {
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-part-types')
+      .get(`${apiUrl}/get-part-types`)
       .then((response) => setPartTypes(response.data.part_types))
       .catch((error) => console.error("Błąd przy pobieraniu rodzajów części:", error));
 
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-cars')
+      .get(`${apiUrl}/get-cars`)
       .then((response) => setCars(response.data.cars))
       .catch((error) => console.error("Błąd przy pobieraniu samochodów:", error));
   }, []);
@@ -38,7 +39,7 @@ function AddPart() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post('${import.meta.env.VITE_API_URL}/add-part', newPart)
+      .post(`${apiUrl}/add-part`, newPart)
       .then(() => navigate("/")) // Przekierowanie po zapisaniu
       .catch((error) => console.error("Błąd przy dodawaniu części:", error));
   };

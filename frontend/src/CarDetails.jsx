@@ -11,7 +11,7 @@ function CarDetails() {
   useEffect(() => {
     // Pobieranie szczegółów samochodu
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-car/${id}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-car/${id}`)
       .then((response) => {
         console.log("Odpowiedź API:", response.data); // Sprawdzamy strukturę odpowiedzi
         if (response.data) { // Sprawdzamy, czy odpowiedź zawiera dane
@@ -27,7 +27,7 @@ function CarDetails() {
   
     // Pobieranie części przypisanych do samochodu
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-parts-for-car/${id}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-parts-for-car/${id}`)
       .then((response) => {
         setParts(response.data.parts);
       })

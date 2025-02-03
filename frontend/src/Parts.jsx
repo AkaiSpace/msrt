@@ -7,6 +7,9 @@ function Parts() {
   const [searchTerm, setSearchTerm] = useState(""); // Nowy stan dla wyszukiwania
   const [sortOrder, setSortOrder] = useState("asc"); // Stan dla sortowania
 
+  // Pobieranie zmiennej API URL z pliku .env
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
+
   useEffect(() => {
     fetchParts();
   }, []);
@@ -14,7 +17,7 @@ function Parts() {
   // Pobiera części z serwera
   const fetchParts = () => {
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-parts')
+      .get(`${apiUrl}/get-parts`)  // Korzystamy ze zmiennej środowiskowej
       .then((response) => setParts(response.data.parts))
       .catch((error) => console.error("Błąd przy pobieraniu części:", error));
   };
@@ -23,7 +26,7 @@ function Parts() {
   const handleDeletePart = (id) => {
     if (window.confirm("Czy na pewno chcesz usunąć tę część?")) {
       axios
-        .delete(`${import.meta.env.VITE_API_URL}/delete-part/${id}`)
+        .delete(`${apiUrl}/delete-part/${id}`)  // Korzystamy ze zmiennej środowiskowej
         .then(() => {
           alert("Część została usunięta.");
           fetchParts(); // Odświeżenie listy części po usunięciu

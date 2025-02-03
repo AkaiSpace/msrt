@@ -4,17 +4,23 @@ import { Link } from "react-router-dom";
 
 function Home() {
   const [cars, setCars] = useState([]);
-  const [sortOrder, setSortOrder] = useState("asc"); // Stan dla kierunku sortowania
+  const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL; // Zmienna środowiskowa z VITE_
+    console.log("Backend URL:", backendUrl); // Sprawdzamy zmienną
+
+    const url = `${backendUrl}/get-cars`;
+    console.log("Requesting URL:", url); // Sprawdzamy pełny URL zapytania
+
     axios
-      .get('${import.meta.env.VITE_API_URL}/get-cars')
+      .get(url)
       .then((response) => {
         setCars(response.data.cars);
       })
       .catch((error) => console.error("Błąd przy pobieraniu samochodów", error));
   }, []);
-
+  
   // Funkcja do sortowania samochodów po numerze nadwozia
   const sortCars = (order) => {
     const sortedCars = [...cars].sort((a, b) => {

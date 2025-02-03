@@ -14,7 +14,7 @@ function EditDriver() {
   // Pobierz dane samochodu z backendu
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-car/${carId}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-car/${carId}`)
       .then((response) => {
         const carData = response.data.car;
         setCar(carData); // Ustawienie danych samochodu
@@ -44,7 +44,7 @@ function EditDriver() {
 
     // Wysyłanie żądania PUT do API
     axios
-      .put(`${import.meta.env.VITE_API_URL}/update-car/${carId}`, { driver: newDriver })
+      .put(`${import.meta.env.VITE_BACKEND_URL}/update-car/${carId}`, { driver: newDriver })
       .then((response) => {
         // Zaktualizowanie danych samochodu po udanej edycji
         setCar(response.data.car);

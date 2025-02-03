@@ -13,7 +13,7 @@ function EditEvent() {
   useEffect(() => {
     // Pobieranie danych wydarzenia z serwera
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-event/${id}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-event/${id}`)
       .then((response) => {
         setEvent({
           event_name: response.data.name,
@@ -34,7 +34,7 @@ function EditEvent() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .put(`${import.meta.env.VITE_API_URL}/update-event/${id}`, event)
+      .put(`${import.meta.env.VITE_BACKEND_URL}/update-event/${id}`, event)
       .then(() => {
         setSuccess(true); // Ustawienie stanu sukcesu
         setTimeout(() => navigate("/events"), 2000); // Przekierowanie po 2 sekundy

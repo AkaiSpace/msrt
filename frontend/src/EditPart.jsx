@@ -22,7 +22,7 @@ function EditPart() {
   useEffect(() => {
     // Pobierz dane części
     axios
-      .get(`${import.meta.env.VITE_API_URL}/get-part/${partId}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-part/${partId}`)
       .then((response) => {
         const partData = response.data.part;
         setPart({
@@ -42,12 +42,12 @@ function EditPart() {
       });
 
     // Pobierz listę samochodów
-    axios.get('${import.meta.env.VITE_API_URL}/get-cars')
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-cars`)
       .then((response) => setCars(response.data.cars))
       .catch((error) => console.error("Błąd przy pobieraniu samochodów:", error));
 
     // Pobierz listę typów części
-    axios.get('${import.meta.env.VITE_API_URL}/get-part-types')
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-part-types`)
       .then((response) => setPartTypes(response.data.part_types))
       .catch((error) => console.error("Błąd przy pobieraniu typów części:", error));
   }, [partId]);
@@ -67,7 +67,7 @@ function EditPart() {
     };
 
     axios
-      .put(`${import.meta.env.VITE_API_URL}/update-part/${partId}`, updatedPart)
+      .put(`${import.meta.env.VITE_BACKEND_URL}/update-part/${partId}`, updatedPart)
       .then(() => {
         navigate("/parts");
       })

@@ -22,7 +22,7 @@ function AddEvent() {
     e.preventDefault();
     console.log("Dane wysyłane do backendu:", newEvent); // Sprawdzenie danych
     axios
-      .post('${import.meta.env.VITE_API_URL}/add-event', newEvent)
+      .post(`${import.meta.env.VITE_BACKEND_URL}/add-event`, newEvent)
       .then(() => navigate("/")) // Przekierowanie po zapisaniu
       .catch((error) => console.error("Błąd przy dodawaniu wydarzenia:", error));
   };
