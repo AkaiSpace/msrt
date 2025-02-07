@@ -17,6 +17,9 @@ import EditEvent from "./EditEvent";
 import AddEvent from "./AddEvent";
 import AddCarToEvent from "./AddCarToEvent";
 import UpdateMileage from "./UpdateMileage";
+import PartHistory from "./PartHistory";
+import CarEvents from "./CarEvents";
+import CarHistory from "./CarHistory";
 
 function App() {
   return (
@@ -41,6 +44,10 @@ function App() {
           <Route path="/add-car-to-event/:eventId" element={<AddCarToEvent />} />
           <Route path="/update-mileage" element={<UpdateMileage />} />
           <Route path="/edit-event/:id" element={<EditEvent />} />
+          <Route path="/part-history/:partId" element={<PartHistory />} />
+          <Route path="/car-events/:carId" element={<CarEvents />} />
+          <Route path="/car-history/:carId" element={<CarHistory />} />
+          <Route path="/add-part/:id" element={<AddPart />} />
         </Route>
       </Routes>
     </div>

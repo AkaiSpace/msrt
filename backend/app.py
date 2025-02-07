@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import date
+from flask_migrate import Migrate
+from datetime import date, datetime, timezone
+timestamp=datetime.now(timezone.utc)
+import json
 
 
 # Tworzymy instancję aplikacji Flask
@@ -14,6 +17,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Wyłączenie powiadomie�
 
 # Inicjalizacja SQLAlchemy
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 
 #Definicja car
 class Car(db.Model):
@@ -28,16 +33,28 @@ def __repr__(self):
 
 
 class Part(db.Model):
+    __tablename__ = "part"
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     mileage = db.Column(db.Integer, nullable=False)
     part_number = db.Column(db.String(100), unique=True, nullable=False)
     notes = db.Column(db.Text, nullable=True)
-    car_id = db.Column(db.Integer, db.ForeignKey('car.id'), nullable=False)
-    part_type_id = db.Column(db.Integer, db.ForeignKey('part_type.id'), nullable=False)
+    car_id = db.Column(db.Integer, db.ForeignKey("car.id", ondelete="CASCADE"), nullable=False)
+    part_type_id = db.Column(db.Integer, db.ForeignKey("part_type.id", ondelete="CASCADE"), nullable=False)
+
+    # Relacja z historią zmian części
+    history = db.relationship(
+        "PartHistory",
+        back_populates="part",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="dynamic"  # Dzięki temu możemy robić np. part.history.filter(...)
+    )
 
     def __repr__(self):
         return f"<Part {self.name} (Number: {self.part_number})>"
+
 
 class PartType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -63,6 +80,35 @@ car_event = db.Table(
     db.Column('car_id', db.Integer, db.ForeignKey('car.id'), primary_key=True),
     db.Column('event_id', db.Integer, db.ForeignKey('event.id'), primary_key=True)
 )
+
+class PartHistory(db.Model):
+    __tablename__ = "part_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    part_id = db.Column(db.Integer, db.ForeignKey("part.id", ondelete="CASCADE"), index=True)
+    changed_field = db.Column(db.String(100), nullable=False)
+    old_value = db.Column(db.Text, nullable=True)
+    new_value = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text, nullable=True)
+
+    part = db.relationship("Part", back_populates="history")
+
+    def __repr__(self):
+        return f"<PartHistory part_id={self.part_id}, field={self.changed_field}, timestamp={self.timestamp}>"
+    
+class CarHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    car_id = db.Column(db.Integer, db.ForeignKey('car.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    changed_field = db.Column(db.String(50), nullable=False)
+    old_value = db.Column(db.String(255))
+    new_value = db.Column(db.String(255))
+
+    car = db.relationship('Car', backref=db.backref('history', lazy=True))
+
+
+
 
 # Funkcja do inicjalizacji bazy danych
 def init_db():
@@ -139,13 +185,39 @@ def update_car(car_id):
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    if 'chassis_number' in data:
-        car.chassis_number = data['chassis_number']
-    
-    if 'driver' in data:
-        car.driver = data['driver']
+    # Sprawdź, czy zmienia się numer nadwozia
+    if 'chassis_number' in data and data['chassis_number'] != car.chassis_number:
+        # Zapisz starą wartość w historii
+        history_entry = CarHistory(
+            car_id=car.id,
+            changed_field="chassis_number",
+            old_value=car.chassis_number,
+            new_value=data['chassis_number'],
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(history_entry)
+        car.chassis_number = data['chassis_number']  # Zaktualizuj numer nadwozia
 
-    db.session.commit()
+    # Sprawdź, czy zmienia się kierowca
+    if 'driver' in data and data['driver'] != car.driver:
+        # Zapisz starą wartość w historii
+        history_entry = CarHistory(
+            car_id=car.id,
+            changed_field="driver",
+            old_value=car.driver,
+            new_value=data['driver'],
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(history_entry)
+        car.driver = data['driver']  # Zaktualizuj kierowcę
+
+    # Zapisz zmiany w bazie danych
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update car', 'details': str(e)}), 500
+
     return jsonify({'message': 'Car updated successfully!', 'car': {
         'id': car.id,
         'chassis_number': car.chassis_number,
@@ -171,20 +243,42 @@ def delete_car(car_id):
 
 # Endpointy dla części
 
+# Endpointy dla części
+
 @app.route('/add-part', methods=['POST'])
 def add_part():
     data = request.get_json()
     if not data or 'name' not in data or 'mileage' not in data or 'part_number' not in data or 'car_id' not in data or 'part_type_id' not in data:
         return jsonify({'error': 'Missing required data'}), 400
 
-    new_part = Part(name=data['name'], mileage=data['mileage'], part_number=data['part_number'], car_id=data['car_id'], part_type_id=data['part_type_id'])
+    new_part = Part(
+        name=data['name'],
+        mileage=data['mileage'],
+        part_number=data['part_number'],
+        car_id=data['car_id'],
+        part_type_id=data['part_type_id']
+    )
+    
     if 'notes' in data:
         new_part.notes = data['notes']
 
     db.session.add(new_part)
     db.session.commit()
 
+    # Dodanie wpisu do historii samochodu
+    new_history_entry = CarHistory(
+        car_id=new_part.car_id,
+        changed_field="part_assigned",
+        old_value=None,  # Brak starej wartości, bo to nowe przypisanie
+        new_value=new_part.name,  # Można wpisać nazwę części lub jej ID
+        timestamp=datetime.utcnow()
+    )
+
+    db.session.add(new_history_entry)
+    db.session.commit()
+
     return jsonify({'message': 'Part added successfully!', 'part': {'name': new_part.name, 'part_number': new_part.part_number}}), 201
+
 
 @app.route('/get-parts', methods=['GET'])
 def get_parts():
@@ -193,7 +287,7 @@ def get_parts():
 
     for part in parts:
         # Pobranie typu części
-        part_type = PartType.query.get(part.part_type_id) if part.part_type_id else None
+        part_type = db.session.get(PartType, part.part_type_id) if part.part_type_id else None
         max_mileage = part_type.max_mileage if part_type else None
 
         # Obliczenie zużycia w procentach
@@ -235,6 +329,9 @@ def get_part(part_id):
             "part_number": part.part_number,
             "mileage": part.mileage,
             "notes": part.notes,
+            "car_id": part.car_id,
+            "part_type_id": part.part_type_id,
+            
             "car_chassis_number": part.car.chassis_number if part.car else None
         }
     }), 200
@@ -251,48 +348,199 @@ def delete_part(part_id):
 
     return jsonify({'message': 'Part deleted successfully!', 'part_id': part_id}), 200
     
-# Endpoint do edycji danych części
-
 @app.route('/update-part/<int:part_id>', methods=['PUT'])
-
 def update_part(part_id):
-
-    part = Part.query.get_or_404(part_id)  # Znajdź część na podstawie ID
+    print("Otrzymane żądanie do update-part:")
+    print(json.dumps(request.get_json(), indent=2))  # Wyświetli dane w konsoli
+    part = Part.query.get_or_404(part_id)
     data = request.get_json()
 
-    # Sprawdź, czy przesłano dane do aktualizacji
-    if not data or 'name' not in data or 'mileage' not in data or 'part_number' not in data or 'car_id' not in data or 'part_type_id' not in data:
+    required_fields = ['name', 'mileage', 'part_number', 'car_id', 'part_type_id']
+    optional_fields = ['notes']
+
+    if not data or any(field not in data for field in required_fields):
         return jsonify({'error': 'Missing required data'}), 400
 
-    # Zaktualizuj dane części
-    part.name = data['name']
-    part.mileage = data['mileage']
-    part.part_number = data['part_number']
-    part.car_id = data['car_id']
-    part.part_type_id = data['part_type_id']
-    if 'notes' in data:
-        part.notes = data['notes']
+    changed_fields = []
+    car_change = None  # Zmienna do przechowywania zmiany auta
 
-    db.session.commit()  # Zapisz zmiany w bazie danych
+    # Aktualizacja wymaganych pól
+    for field in required_fields:
+        if field in data:
+            old_value = getattr(part, field)
+            new_value = data[field]
 
-    return jsonify({'message': 'Part updated successfully!', 'part': {'id': part.id, 'name': part.name, 'mileage': part.mileage, 'part_number': part.part_number, 'notes': part.notes, 'car_id': part.car_id, 'part_type_id': part.part_type_id}}), 200
+            if str(old_value) != str(new_value):
+                setattr(part, field, new_value)
+                changed_fields.append((field, old_value, new_value))
+
+                # Jeśli zmienia się car_id, zapisz starą i nową wartość
+                if field == "car_id":
+                    car_change = (old_value, new_value)
+
+    # Aktualizacja opcjonalnych pól
+    for field in optional_fields:
+        if field in data:
+            old_value = getattr(part, field, None)
+            new_value = data[field]
+
+            if str(old_value) != str(new_value):
+                setattr(part, field, new_value)
+                changed_fields.append((field, old_value, new_value))
+
+    # Zapisanie zmian do historii części
+    for field, old, new in changed_fields:
+        history_entry = PartHistory(
+            part_id=part.id,
+            changed_field=field,
+            old_value=str(old) if old is not None else None,
+            new_value=str(new) if new is not None else None,
+            timestamp=datetime.now(timezone.utc)
+        )
+        db.session.add(history_entry)
+
+    # Jeśli część została przeniesiona do innego auta, zapisujemy to w car_history
+    if car_change:
+        old_car_id, new_car_id = car_change
+        part_name = part.name  # Zmienna przechowująca nazwę części
+        
+        car_history_entry = CarHistory(
+            car_id=new_car_id,
+            changed_field=f"part_moved: {part_name}",
+            old_value=str(old_car_id),  # Stary samochód, do którego część była przypisana
+            new_value=str(new_car_id),  # Nowy samochód
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(car_history_entry)
+
+        # Zapis historii dla starego samochodu (auta, z którego część została zabrana)
+        car_history_entry_old = CarHistory(
+            car_id=old_car_id,
+            changed_field=f"part_moved: {part_name}",
+            old_value=str(old_car_id),  # Nowy samochód, do którego część została przypisana
+            new_value=str(new_car_id),  # Stary samochód
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(car_history_entry_old)
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Part updated successfully!',
+        'updated_fields': [{field: {'old': old, 'new': new}} for field, old, new in changed_fields]
+    }), 200
+
 
 
 #Endpoint do aktualizacji przebiegu części danego samochodu
-@app.route('/update-mileage/<int:part_id>', methods=['PUT'])
-def update_mileage(part_id):
-    part = Part.query.get_or_404(part_id)  # Znajdź część na podstawie ID
+@app.route('/update-mileage/<int:car_id>', methods=['PUT'])
+def update_mileage(car_id):
     data = request.get_json()
 
     # Sprawdź, czy przesłano dane do aktualizacji
     if not data or 'mileage' not in data:
         return jsonify({'error': 'Missing required data'}), 400
-    
-    # Zaktualizuj przebieg części
-    part.mileage = data['mileage']
-    db.session.commit()  # Zapisz zmiany w bazie danych
 
-    return jsonify({'message': 'Mileage updated successfully!', 'part': {'id': part.id, 'name': part.name, 'mileage': part.mileage}}), 200
+    # Sprawdź, czy mileage jest liczbą
+    try:
+        new_mileage = int(data['mileage'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Mileage must be a number'}), 400
+
+    # Znajdź wszystkie części przypisane do danego samochodu
+    parts = Part.query.filter_by(car_id=car_id).all()
+    if not parts:
+        return jsonify({'error': 'No parts found for this car'}), 404
+
+    # Zaktualizuj przebieg dla wszystkich części
+    updated_parts = []
+    for part in parts:
+        old_mileage = part.mileage  # Stary przebieg, przed aktualizacją
+        part.mileage = new_mileage  # Zaktualizuj przebieg
+
+        # Dodaj wpis do historii zmian
+        part_history = PartHistory(
+            part_id=part.id,
+            changed_field="mileage",
+            old_value=old_mileage,
+            new_value=new_mileage,
+            timestamp=datetime.utcnow(),
+            notes=data.get("notes", "")  # Dodaj notatki, jeśli są obecne
+        )
+        db.session.add(part_history)
+        updated_parts.append({'id': part.id, 'name': part.name, 'mileage': part.mileage})
+
+    # Zapisz zmiany w bazie danych
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update mileage', 'details': str(e)}), 500
+
+    return jsonify({'message': 'Mileage updated successfully!', 'updated_parts': updated_parts}), 200
+
+#Endpoint dodatkowy do dodawania przebiegu
+@app.route('/add-mileage/<int:car_id>', methods=['PUT'])
+def add_mileage(car_id):
+    data = request.get_json()
+
+    # Sprawdź, czy przesłano dane do aktualizacji
+    if not data or 'parts' not in data:
+        return jsonify({'error': 'Missing required data'}), 400
+
+    # Sprawdź, czy `parts` jest listą
+    if not isinstance(data['parts'], list):
+        return jsonify({'error': 'Parts must be a list'}), 400
+
+    # Znajdź wszystkie części przypisane do danego samochodu
+    parts = Part.query.filter_by(car_id=car_id).all()
+    if not parts:
+        return jsonify({'error': 'No parts found for this car'}), 404
+
+    # Przygotuj mapę części do aktualizacji
+    parts_to_update = {part.id: part for part in parts}
+
+    # Zaktualizuj przebieg dla wybranych części
+    updated_parts = []
+    for part_data in data['parts']:
+        part_id = part_data.get('part_id')
+        mileage_to_add = part_data.get('mileage')
+
+        # Sprawdź, czy część istnieje
+        if part_id not in parts_to_update:
+            continue  # Pomijaj nieistniejące części
+
+        # Sprawdź, czy mileage jest liczbą
+        try:
+            mileage_to_add = int(mileage_to_add)
+        except (ValueError, TypeError):
+            continue  # Pomijaj nieprawidłowe wartości
+
+        # Zaktualizuj przebieg części
+        part = parts_to_update[part_id]
+        old_mileage = part.mileage  # Stary przebieg, przed aktualizacją
+        part.mileage += mileage_to_add  # Dodaj nowy przebieg do istniejącego
+
+        # Dodaj wpis do historii zmian
+        part_history = PartHistory(
+            part_id=part.id,
+            changed_field="mileage",
+            old_value=old_mileage,
+            new_value=part.mileage,  # Nowy przebieg po dodaniu
+            timestamp=datetime.utcnow(),
+            notes=data.get("notes", "")  # Dodaj notatki, jeśli są obecne
+        )
+        db.session.add(part_history)
+        updated_parts.append({'id': part.id, 'name': part.name, 'mileage': part.mileage})
+
+    # Zapisz zmiany w bazie danych
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update mileage', 'details': str(e)}), 500
+
+    return jsonify({'message': 'Mileage added successfully!', 'updated_parts': updated_parts}), 200
 
 
 #Endpointy dla typów części
@@ -442,6 +690,7 @@ def get_events():
             'date': event.date,
             'notes': event.notes,
             'car_chassis_numbers': car_chassis_numbers,  # Lista numerów nadwozi
+            'car_ids': [car.id for car in event.cars]  # Lista ID samochodów
         }
         
         event_list.append(event_data)
@@ -576,6 +825,79 @@ def get_cars_for_event(event_id):
 
     car_list = [{'id': car.id, 'chassis_number': car.chassis_number, 'driver': car.driver} for car in cars]
     return jsonify({'cars': car_list})
+
+# Endpoint do pobierania wydarzeń dla danego samochodu
+@app.route('/get-events-for-car/<int:car_id>', methods=['GET'])
+def get_events_for_car(car_id):
+    car = Car.query.get_or_404(car_id)
+    events = car.events
+
+    event_list = [{'id': event.id, 'name': event.name, 'date': event.date, 'notes': event.notes} for event in events]
+    return jsonify({'events': event_list})
+
+
+
+# Endpoint do pobierania historii edycji części
+@app.route('/part-history/<int:part_id>', methods=['GET'])
+def get_part_history(part_id):
+    # Pobranie historii dla danej części
+    history = PartHistory.query.filter_by(part_id=part_id).all()
+
+    # Jeśli nie znaleziono historii, zwróć odpowiednią wiadomość
+    if not history:
+        return jsonify({'message': 'No history found for this part'}), 404
+
+    # Zwróć historię w formacie JSON
+    history_data = []
+    for record in history:
+        history_data.append({
+            'id': record.id,
+            'timestamp': record.timestamp,
+            'changed_field': record.changed_field,
+            'old_value': record.old_value,
+            'new_value': record.new_value,
+            'notes': record.notes,
+        })
+
+    return jsonify({'history': history_data}), 200
+
+#Endpoint do usuwania historii edycji części
+@app.route('/delete-part-history/<int:part_id>', methods=['DELETE'])
+def delete_part_history(part_id):
+    # Usunięcie wszystkich rekordów historii dla danej części
+    history_entries = PartHistory.query.filter_by(part_id=part_id).all()
+    
+    if not history_entries:
+        return jsonify({'error': 'No history found for this part'}), 404
+    
+    # Usuwanie rekordów historii
+    for entry in history_entries:
+        db.session.delete(entry)
+    
+    db.session.commit()
+    
+    return jsonify({'message': f'History for part {part_id} deleted successfully'}), 200
+
+
+# Endpoint do pobierania historii edycji samochodu
+@app.route('/car-history/<int:car_id>', methods=['GET'])
+def get_car_history(car_id):
+    car = Car.query.get_or_404(car_id)
+    history = CarHistory.query.filter_by(car_id=car.id).order_by(CarHistory.timestamp.desc()).all()
+
+    history_data = []
+    for record in history:
+        history_data.append({
+            'id': record.id,
+            'timestamp': record.timestamp,
+            'changed_field': record.changed_field,
+            'old_value': record.old_value,
+            'new_value': record.new_value
+        })
+
+    return jsonify({'history': history_data})
+
+
 
 
 

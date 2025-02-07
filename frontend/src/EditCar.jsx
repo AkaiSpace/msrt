@@ -23,7 +23,7 @@ function EditCar() {
       .then((response) => {
         console.log("Otrzymane dane z API:", response.data); // Debugowanie
         setCar(response.data);
-        setNewChassisNumber(response.data.chassis_number || ""); 
+        setNewChassisNumber(response.data.chassis_number || "");
         setNewDriver(response.data.driver || "");
         setLoading(false);
       })
@@ -44,6 +44,14 @@ function EditCar() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Sprawdź, czy nowe wartości różnią się od obecnych
+    if (newChassisNumber === car.chassis_number && newDriver === car.driver) {
+      setError("Nie wprowadzono żadnych zmian.");
+      return;
+    }
+
+    // Walidacja danych
     if (!newChassisNumber || !newDriver) {
       setError("Numer nadwozia i kierowca są wymagane!");
       return;
@@ -53,16 +61,22 @@ function EditCar() {
     axios
       .put(`${import.meta.env.VITE_BACKEND_URL}/update-car/${carId}`, {
         chassis_number: newChassisNumber,
-        driver: newDriver, // Dodanie kierowcy
+        driver: newDriver,
       })
       .then((response) => {
-        setCar(response.data);
+        console.log("Odpowiedź z API:", response.data); // Debugowanie
+        setCar(response.data.car); // Aktualizuj stan samochodu
         setError(""); // Czyszczenie błędu
+        alert("Samochód zaktualizowany pomyślnie!");
         navigate("/edit"); // Przekierowanie do listy samochodów
       })
       .catch((error) => {
         console.error("Błąd przy edytowaniu samochodu", error);
-        setError(`Wystąpił błąd przy edytowaniu samochodu: ${error.message}`);
+        setError(
+          `Wystąpił błąd przy edytowaniu samochodu: ${
+            error.response?.data?.error || error.message
+          }`
+        );
       });
   };
 

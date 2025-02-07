@@ -68,14 +68,19 @@ function Parts() {
     <div className="container mt-4">
       <h1>Lista części</h1>
 
-      {/* Pole wyszukiwania */}
-      <input
-        type="text"
-        className="form-control my-3"
-        placeholder="Szukaj po nazwie, numerze nadwozia lub numerze części..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      {/* Przycisk "Dodaj część" na górze */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <input
+          type="text"
+          className="form-control w-75"
+          placeholder="Szukaj po nazwie, numerze nadwozia lub numerze części..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <Link to="/add-part" className="btn btn-success">
+          Dodaj część
+        </Link>
+      </div>
 
       <table className="table table-striped">
         <thead>
@@ -105,7 +110,7 @@ function Parts() {
               <td>{part.id}</td>
               <td>{part.car_chassis_number}</td>
               <td>{part.name}</td>
-              <td>{part.part_number}</td>
+              <td><Link to={`/part-history/${part.id}`}>{part.part_number}</Link></td>
               <td>{part.mileage}</td>
               <td>{part.usage_percentage !== null ? `${part.usage_percentage}%` : "-"}</td>
               <td>{part.notes}</td>
@@ -127,7 +132,6 @@ function Parts() {
 
       <div className="mt-4 d-flex justify-content-between">
         <Link to="/" className="btn btn-secondary">Powrót do strony głównej</Link>
-        <Link to="/add-part" className="btn btn-success">Dodaj część</Link>
       </div>
     </div>
   );

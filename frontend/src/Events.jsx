@@ -106,7 +106,7 @@ function Events() {
                       to={`/add-car-to-event/${event.id}`}
                       className="btn btn-warning btn-sm me-2"
                     >
-                      Dodaj Pojazdy
+                      Dodaj/Usuń Pojazdy
                     </Link>
                     <Link
                       to={`/edit-event/${event.id}`}

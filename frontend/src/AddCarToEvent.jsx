@@ -5,7 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 function AddCarToEvent() {
   const { eventId } = useParams(); // Pobieramy ID wydarzenia z URL
   const [event, setEvent] = useState(null); // Szczegóły wydarzenia
-  const [cars, setCars] = useState([]); // Lista samochodów
+  const [cars, setCars] = useState([]); // Lista wszystkich samochodów
+  const [assignedCars, setAssignedCars] = useState([]); // Lista samochodów przypisanych do wydarzenia
   const [selectedCarId, setSelectedCarId] = useState(""); // Wybrany samochód
   const navigate = useNavigate();
 
@@ -17,13 +18,21 @@ function AddCarToEvent() {
       .catch((error) => console.error("Błąd przy pobieraniu wydarzenia:", error));
   }, [eventId]);
 
-  // Pobiera listę samochodów
+  // Pobiera listę wszystkich samochodów
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/get-cars`)
       .then((response) => setCars(response.data.cars))
       .catch((error) => console.error("Błąd przy pobieraniu samochodów:", error));
   }, []);
+
+  // Pobiera listę samochodów przypisanych do wydarzenia
+  useEffect(() => {
+    axios
+      .get(`${import.meta.env.VITE_BACKEND_URL}/get-cars-for-event/${eventId}`)
+      .then((response) => setAssignedCars(response.data.cars))
+      .catch((error) => console.error("Błąd przy pobieraniu przypisanych samochodów:", error));
+  }, [eventId]);
 
   // Obsługuje dodanie pojazdu do wydarzenia
   const handleSubmit = (e) => {
@@ -41,9 +50,30 @@ function AddCarToEvent() {
       })
       .then(() => {
         alert("Pojazd został dodany do wydarzenia!");
-        navigate("/events"); // Przekierowanie po dodaniu
+        // Odśwież listę przypisanych samochodów
+        axios
+          .get(`${import.meta.env.VITE_BACKEND_URL}/get-cars-for-event/${eventId}`)
+          .then((response) => setAssignedCars(response.data.cars))
+          .catch((error) => console.error("Błąd przy pobieraniu przypisanych samochodów:", error));
       })
       .catch((error) => console.error("Błąd przy dodawaniu pojazdu:", error));
+  };
+
+  // Obsługuje usunięcie pojazdu z wydarzenia
+  const handleRemoveCar = (carId) => {
+    const confirmRemove = window.confirm("Czy na pewno chcesz usunąć ten pojazd z wydarzenia?");
+    if (confirmRemove) {
+      axios
+        .delete(`${import.meta.env.VITE_BACKEND_URL}/remove-car-from-event`, {
+          data: { event_id: eventId, car_id: carId },
+        })
+        .then(() => {
+          alert("Pojazd został usunięty z wydarzenia!");
+          // Odśwież listę przypisanych samochodów
+          setAssignedCars((prev) => prev.filter((car) => car.id !== carId));
+        })
+        .catch((error) => console.error("Błąd przy usuwaniu pojazdu:", error));
+    }
   };
 
   return (
@@ -80,6 +110,28 @@ function AddCarToEvent() {
           Dodaj pojazd
         </button>
       </form>
+
+      {/* Lista przypisanych samochodów */}
+      <div className="mt-4">
+        <h3>Przypisane pojazdy</h3>
+        {assignedCars.length === 0 ? (
+          <p>Brak przypisanych pojazdów.</p>
+        ) : (
+          <ul className="list-group">
+            {assignedCars.map((car) => (
+              <li key={car.id} className="list-group-item d-flex justify-content-between align-items-center">
+                {car.chassis_number} - {car.model}
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleRemoveCar(car.id)}
+                >
+                  Usuń
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <button onClick={() => navigate("/events")} className="btn btn-secondary mt-3">
         Powrót do listy wydarzeń

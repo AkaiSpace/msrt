@@ -20,7 +20,7 @@ function Home() {
       })
       .catch((error) => console.error("Błąd przy pobieraniu samochodów", error));
   }, []);
-  
+
   // Funkcja do sortowania samochodów po numerze nadwozia
   const sortCars = (order) => {
     const sortedCars = [...cars].sort((a, b) => {
@@ -41,20 +41,36 @@ function Home() {
   };
 
   return (
-    <div>
-      <h1 className="my-4 text-center">M-Sport DB v1.0.0</h1>
+    <div className="container mt-4">
+      <h1 className="text-center">M-Sport DB v1.0.0</h1>
+
+      {/* Przycisk sortowania */}
       <button 
         onClick={handleSortClick} 
         className="btn btn-secondary mb-3"
       >
         Sortuj po numerze nadwozia ({sortOrder === "asc" ? "Rosnąco" : "Malejąco"})
       </button>
+
+      {/* Lista samochodów */}
       <ul className="list-group">
         {cars.map((car) => (
-          <li key={car.id} className="list-group-item">
-            <Link to={`/car/${car.id}`} className="fw-bold">{car.chassis_number}</Link>
-            <p className="mb-1"><strong>Kierowca:</strong> {car.driver || "Brak danych"}</p>
-            <p className="mb-0"><strong>Ostatnie wydarzenie:</strong> {car.last_event || "Brak danych"}</p>
+          <li key={car.id} className="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <Link to={`/car/${car.id}`} className="fw-bold">{car.chassis_number}</Link>
+              <p className="mb-1"><strong>Kierowca:</strong> {car.driver || "Brak danych"}</p>
+              <p className="mb-0"><strong>Ostatnie wydarzenie:</strong> {car.last_event || "Brak danych"}</p>
+            </div>
+
+            {/* Przyciski "Eventy" i "Historia" */}
+            <div>
+              <Link to={`/car-events/${car.id}`} className="btn btn-primary btn-sm me-2">
+                Eventy
+              </Link>
+              <Link to={`/car-history/${car.id}`} className="btn btn-info btn-sm">
+                Historia
+              </Link>
+            </div>
           </li>
         ))}
       </ul>

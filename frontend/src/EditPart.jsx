@@ -58,17 +58,20 @@ function EditPart() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+  
     // Przygotuj dane do wysłania
     const updatedPart = {
       ...part,
       car_id: part.car_id || cars[0]?.id,  // Zachowaj poprzednią wartość lub użyj domyślnej
       part_type_id: part.part_type_id || partTypes[0]?.id,  // Zachowaj poprzednią wartość lub użyj domyślnej
     };
-
+  
+    console.log("Wysyłane dane:", updatedPart);  // Dodaj ten log, aby zobaczyć, co jest wysyłane
+  
     axios
       .put(`${import.meta.env.VITE_BACKEND_URL}/update-part/${partId}`, updatedPart)
-      .then(() => {
+      .then((response) => {
+        console.log("Odpowiedź z backendu:", response.data);  // Dodaj ten log, aby zobaczyć odpowiedź
         navigate("/parts");
       })
       .catch((error) => {
