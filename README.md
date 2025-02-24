@@ -26,7 +26,7 @@ The project consists of:
 - **Axios** (for API communication)
 
 ### Deployment:
-- **VPS (Linux Alpine)**
+- **Pine64 ROCK64 (Arch Linux ARM)**
 - **NGINX** (for serving frontend and reverse proxying backend)
 - **Node.js & npm** (for frontend builds)
 
