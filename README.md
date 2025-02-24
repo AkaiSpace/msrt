@@ -10,7 +10,7 @@ MSRT is a web application designed to track vehicle parts and events in a shared
 The project consists of:
 - **Backend**: A Flask-based REST API
 - **Frontend**: A React-based user interface
-- **Database**: MySQL (shared instance on VPS)
+- **Database**: SQLite
 
 ---
 
@@ -18,7 +18,7 @@ The project consists of:
 
 ### Backend:
 - **Python** (Flask, Flask-RESTful)
-- **MySQL** (Remote database instance)
+- **SQLite** (Remote database instance)
 - **NGINX** (Reverse Proxy)
 
 ### Frontend:
